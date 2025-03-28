@@ -112,6 +112,7 @@ class SensorUDP(Sensor):
         import socket
 
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._sock.settimeout(0.1)
         self._sock.bind((self._ip, self._port))
         self._connection_thread = Thread(target=self._receive)
         self._connection_thread.start()
@@ -119,7 +120,10 @@ class SensorUDP(Sensor):
     def _receive(self):
         self._receiving = True
         while self._receiving:
-            data, addr = self._sock.recvfrom(1024)
+            try:
+                data, addr = self._sock.recvfrom(1024)
+            except TimeoutError:
+                continue
             try:
                 data_decoded = data.decode()
             except UnicodeDecodeError:
@@ -209,5 +213,6 @@ def handle_interrupt_signal(signal, frame):
     for sensor in Sensor.instances:
         sensor.disconnect()
     sys.exit(0)
+    
 
 signal.signal(signal.SIGINT, handle_interrupt_signal)
